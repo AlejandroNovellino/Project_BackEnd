@@ -38,7 +38,7 @@ def sign_up():
     data = request.json
     user = User.create(email=data.get('email'), password=data.get('password'), role=data.get('role'))
     if not isinstance(user, User):
-        return jsonify({"msg": "tuve problemas, lo siento"}), 500
+        return jsonify({"msg": "Ocurrio un problema interno"}), 500
     return jsonify(user.serialize()), 201
 
 @app.route("/log-in", methods=["POST"])
@@ -49,9 +49,9 @@ def log_in():
     user = User.query.filter_by(email=data['email']).one_or_none()
 
     if user is None: 
-        return jsonify({"msg": "no existe el usuario"}), 404
+        return jsonify({"msg": "No existe el usuario"}), 404
     if not user.check_password(data.get('password')):
-        return jsonify({"msg": "bad credentials"}), 400
+        return jsonify({"msg": "Credenciales incorrectas"}), 400
 
     token = create_access_token(identity=user.id)
 
@@ -62,5 +62,5 @@ def log_in():
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
-    PORT = int(os.environ.get('PORT', 5000))
+    PORT = int(os.environ.get('PORT', 4000))
     app.run(host='0.0.0.0', port=PORT, debug=False)
