@@ -105,12 +105,20 @@ class Cathedra(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     credits = db.Column(db.Integer, nullable=False)
     career = db.Column(db.String(40), nullable=False)
-    # relations
+    # foreign keys
     coordinator_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
+    # relations
     coordinator = db.relationship("Professor", backref=db.backref("cathedra", uselist=False))
     courses = db.relationship("Course", backref="cathedra")
     # relations many to many
     professors = db.relationship('Cathedra_asigns', backref='cathedra')
+
+    def serialize(self):
+        return {
+            "credits": self.credits,
+            "career": self.career,
+            "coordinator": self.coordinator_id
+        }
 
 class Cathedra_asigns(db.Model):
     __tablename__ = "cathedra_asigns"
