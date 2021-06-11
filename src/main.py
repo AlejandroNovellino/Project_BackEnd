@@ -60,6 +60,10 @@ def log_in():
         "token": token
     }), 200
 
+@app.route("/cathedras", methods=["GET"])
+def get_all_cathedras():
+    return []
+
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 4000))
