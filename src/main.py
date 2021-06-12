@@ -2,14 +2,14 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from flask import Flask, request, jsonify, url_for
+from flask import Flask, request, jsonify, url_for, json
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, JWTManager
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Common_data, Professor, Cathedra, Cathedra_asigns, Student, Professor_student_rel, Course, Notes, Evaluation_plan, Evaluation
 #from models import Person
 
 app = Flask(__name__)
@@ -60,9 +60,34 @@ def log_in():
         "token": token
     }), 200
 
-@app.route("/cathedras", methods=["GET"])
+@app.route("/cathedra", methods=["GET"])
 def get_all_cathedras():
-    return []
+    '''
+
+    '''
+    cathedras = [cathedra.serialized() for cathedra in Cathedra.query.all()]
+    return jsonify({cathedras}), 200
+
+@app.route("/only-cathedra", methods=["POST"])
+def create_cathedra():
+    '''
+    '''
+    data = json.loads(request.data)
+    new_cathedra = Cathedra(
+        name=data["name"],
+        credits=data["credits"],
+        career=data["career"]
+    )
+
+    db.session.add(new_cathedra)
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un error creando la materia"}), 500
+
+    return jsonify(new_cathedra.serialize_only_cathedra()), 200
+
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
