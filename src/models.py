@@ -100,8 +100,30 @@ class Professor(Common_data, db.Model):
         'polymorphic_identity':'professor'
     }
 
+    def __init__(self, **kwargs):
+        super().__init__(
+            full_name=kwargs["full_name"],
+            ci=kwargs["ci"],
+            phone_number=kwargs["phone_number"],
+            age=kwargs["age"],
+            nationality=kwargs["nationality"],
+            residence=kwargs["residence"],
+            career=kwargs["career"]
+        )
+
+    def __repr__(self):
+        return f'Professor {self.id} {self.full_name}'
+
+    def serialize_when_created(self):
+        dict_to_return = self.super_serialize()
+        dict_to_return.update(
+            {"cathedras":  list(map(lambda cathedra: cathedra.cathedra.serialize_when_created()["name"], self.cathedras))}
+        )
+        return dict_to_return
+
     def serialize(self):
         return {
+            "id": self.id,
             "fullname": self.full_name,
             "ci": self.ci,
             "phone_number": self.phone_number,
@@ -109,15 +131,16 @@ class Professor(Common_data, db.Model):
             "nationality": self.nationality,
             "residence": self.residence,
             "career": self.career,
-            "courses": list(map(lambda course: course.serialize()["title"]), self.courses),
+            "courses": list(map(lambda course: course.serialize()["title"], self.courses)),
             "students": list(map(lambda student: student.serialize()["name"], self.students)),
-            "cathedras": list(map(lambda cathedra: cathedra.serialize()["name"]), self.cathedras)
+            "cathedras": list(map(lambda cathedra: cathedra.serialize()["name"], self.cathedras))
         }
 
 class Cathedra(db.Model):
     __tablename__ = "cathedra"
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(40), nullable=False, unique=True)
+    code = db.Column(db.String(4), nullable=False, unique=True)
     credits = db.Column(db.Integer, nullable=False)
     career = db.Column(db.String(40), nullable=False)
     # foreign keys
@@ -128,21 +151,24 @@ class Cathedra(db.Model):
     # relations many to many
     professors = db.relationship('Cathedra_asigns', backref='cathedra')
 
-    def serialize_only_cathedra(self):
+    def serialize_when_created(self):
         return {
+            "id": self.id,
             "name": self.name,
+            "code": self.code,
             "credits": self.credits,
             "career": self.career
         }
 
     def serialize(self):
         return {
+            "id": self.id,
             "name": self.name,
             "credits": self.credits,
             "career": self.career,
             "coordinator": list(map(lambda coordinator: coordinator.serialize()["name"], self.coordinator)),
             "courses": list(map(lambda course: course.serialize()["title"], self.courses)),
-            "professors": list(map(lambda professor: professor.serialize()["name"]))
+            "professors": list(map(lambda professor: professor.serialize()["name"], self.professors))
         }
 
 class Cathedra_asigns(db.Model):
@@ -162,8 +188,20 @@ class Student(Common_data, db.Model):
         'polymorphic_identity':'student'
     }
 
+    def __init__(self, **kwargs):
+        super().__init__(
+            full_name=kwargs["full_name"],
+            ci=kwargs["ci"],
+            phone_number=kwargs["phone_number"],
+            age=kwargs["age"],
+            nationality=kwargs["nationality"],
+            residence=kwargs["residence"],
+            career=kwargs["career"]
+        )
+
     def serialize(self):
         return {
+            "id": self.id,
             "fullname": self.full_name,
             "ci": self.ci,
             "phone_number": self.phone_number,
@@ -194,9 +232,10 @@ class Course(db.Model):
 
     def serialize(self):
         return {
+            "id": self.id,
             "title": self.title,
             "init_date": self.init_date,
-            "students": map(list(lambda student: student.serialize()["name"]))
+            "students": map(list(lambda student: student.serialize()["name"], self.students))
         }
 
 class Notes(db.Model):
@@ -220,7 +259,7 @@ class Evaluation_plan(db.Model):
 
     def serialize(self):
         return {
-            "evaluations": list(map(lambda evaluation: evaluation.serialize()))
+            "evaluations": list(map(lambda evaluation: evaluation.serialize(), self.evaluations))
         }
 
 class Evaluation(db.Model):
@@ -233,6 +272,7 @@ class Evaluation(db.Model):
 
     def serialize(self):
         return {
+            "id": self.id,
             "name": self.name,
             "percentage": self.percentage
         }

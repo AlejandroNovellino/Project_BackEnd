@@ -43,8 +43,6 @@ def sign_up():
 
 @app.route("/log-in", methods=["POST"])
 def log_in():
-    print(request.data)
-    print(request.json)
     data = request.json
     user = User.query.filter_by(email=data['email']).one_or_none()
 
@@ -60,21 +58,27 @@ def log_in():
         "token": token
     }), 200
 
+# endpoints for cathedra
+
 @app.route("/cathedra", methods=["GET"])
 def get_all_cathedras():
     '''
-
+        Get all cathedras
     '''
-    cathedras = [cathedra.serialized() for cathedra in Cathedra.query.all()]
-    return jsonify({cathedras}), 200
+    #cathedras = [cathedra.serialize() for cathedra in Cathedra.query.all()]
+    cathedras =  Cathedra.query.filter_by(code="0000")
+    print(cathedras[0].id)
+    return jsonify([cathedra.serialize_when_created() for cathedra in cathedras]), 200
 
-@app.route("/only-cathedra", methods=["POST"])
+@app.route("/cathedra", methods=["POST"])
 def create_cathedra():
     '''
+        Creates a new cathedra with just "name, code, credits, career"
     '''
     data = json.loads(request.data)
     new_cathedra = Cathedra(
         name=data["name"],
+        code=data["code"],
         credits=data["credits"],
         career=data["career"]
     )
@@ -86,8 +90,45 @@ def create_cathedra():
         db.session.rollback()
         return jsonify({"msg": "Hubo un error creando la materia"}), 500
 
-    return jsonify(new_cathedra.serialize_only_cathedra()), 200
+    return jsonify(new_cathedra.serialize_when_created()), 200
 
+# endpoints for professor
+@app.route("/professor", methods=["POST"])
+def create_professor():
+    '''
+        Creates a new professor
+    '''
+    # creates the professor 
+    data = json.loads(request.data)
+    new_professor = Professor(
+        full_name=data["fullname"],
+        ci=data["ci"],
+        phone_number=data["phone_number"],
+        age=data["age"],
+        nationality=data["nationality"],
+        residence=data["residence"],
+        career=data["career"]
+    )
+    db.session.add(new_professor)
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un error creando al profesor"}), 500
+
+    # creates the relations with the cathedras
+    for cathedra_code in data["cathedras"]:
+        cathedra = Cathedra.query.filter_by(code=cathedra_code)
+        new_relation = Cathedra_asigns(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
+        db.session.add(new_relation)
+
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
+
+    return jsonify(new_professor.serialize_when_created()), 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
