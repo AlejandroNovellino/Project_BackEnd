@@ -9,7 +9,7 @@ from flask_cors import CORS
 from flask_jwt_extended import create_access_token, JWTManager
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Common_data, Professor, Cathedra, Cathedra_asigns, Student, Professor_student_rel, Course, Notes, Evaluation_plan, Evaluation
+from models import db, User, Common_data, Professor, Cathedra, Cathedra_asigns, Student, Course, Inscription, Grade, Evaluation
 #from models import Person
 
 app = Flask(__name__)

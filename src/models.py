@@ -18,6 +18,10 @@ class User(db.Model):
     salt = db.Column(db.String(40), nullable=False)
     hashed_password = db.Column(db.String(240), nullable=False)
     role = db.Column(db.Enum(Role), nullable=False)
+    # foreign keys
+    professor_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
+    # relations
+    professor = db.relationship('Professor', backref=db.backref("user", uselist=False))
 
     def __init__(self, **kwargs):
         self.email = kwargs.get('email')
@@ -92,8 +96,6 @@ class Professor(Common_data, db.Model):
     id = db.Column(db.Integer, db.ForeignKey('common_data.id'), primary_key=True)
     # relations
     courses = db.relationship("Course", backref="professor")
-    # relations many to many
-    students = db.relationship('Professor_student_rel', backref='professor')
     cathedras = db.relationship('Cathedra_asigns', backref='professor')
 
     __mapper_args__ = {
@@ -148,7 +150,6 @@ class Cathedra(db.Model):
     # relations
     coordinator = db.relationship("Professor", backref=db.backref("cathedra", uselist=False))
     courses = db.relationship("Course", backref="cathedra")
-    # relations many to many
     professors = db.relationship('Cathedra_asigns', backref='cathedra')
 
     def serialize_when_created(self):
@@ -181,8 +182,8 @@ class Cathedra_asigns(db.Model):
 class Student(Common_data, db.Model):
     __tablename__ = "student"
     id = db.Column(db.Integer, db.ForeignKey('common_data.id'), primary_key=True)
-    # relations many to many
-    notes = db.relationship('Notes', backref='student')
+    # relations 
+    grades = db.relationship('Grade', backref='student')
 
     __mapper_args__ = {
         'polymorphic_identity':'student'
@@ -212,13 +213,6 @@ class Student(Common_data, db.Model):
             "notes": list(map(lambda note: note.serialize()["note"], self.notes))
         }
 
-class Professor_student_rel(db.Model):
-    __tablename__ = 'professor_student_rel'
-    id = db.Column(db.Integer, primary_key=True)
-    # foreign keys
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
-    professor_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
-
 class Course(db.Model):
     __tablename__ = 'course'
     id = db.Column(db.Integer, primary_key=True)
@@ -227,8 +221,9 @@ class Course(db.Model):
     # foreign keys
     cathedra_id = db.Column(db.Integer, db.ForeignKey('cathedra.id'))
     professor_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
-    #relations many to many
-    students = db.relationship('Notes', backref='course')
+    #relations 
+    inscriptions = db.relationship('Inscription', backref='course')
+    evaluations = db.relationship('Evaluation', backref='course')
 
     def serialize(self):
         return {
@@ -238,28 +233,34 @@ class Course(db.Model):
             "students": map(list(lambda student: student.serialize()["name"], self.students))
         }
 
-class Notes(db.Model):
-    __tablename_ = 'notes'
+class Inscription(db.Model):
+    __tablename_ = 'inscription'
     id = db.Column(db.Integer, primary_key=True)
-    note = db.Column(db.Integer)
     # foreign keys
     student_id = db.Column(db.Integer, db.ForeignKey('student.id')) 
     course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
+    # relations
+    grades = db.relationship('Grade', backref='inscription')
 
     def serialize(self):
         return {
-            "note": self.note
+            "id": self.id,
+            "grades": list(map(lambda grade: grade.serialize(), self.grades))
         }
 
-class Evaluation_plan(db.Model):
-    __tablename__ = 'evaluation_plan'
+class Grade(db.Model):
+    __tablename__ = 'grade'
     id = db.Column(db.Integer, primary_key=True)
-    # relations
-    evaluations = db.relationship('Evaluation', backref='evaluation_plan')
+    value = db.Column(db.Integer, nullable=False)
+    # foreign keys
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
+    evaluation_id = db.Column(db.Integer, db.ForeignKey('evaluation.id'))
+    inscription_id = db.Column(db.Integer, db.ForeignKey('inscription.id'))
 
     def serialize(self):
         return {
-            "evaluations": list(map(lambda evaluation: evaluation.serialize(), self.evaluations))
+            "id": self.id,
+            "value": self.value
         }
 
 class Evaluation(db.Model):
@@ -268,11 +269,14 @@ class Evaluation(db.Model):
     name = db.Column(db.String(40), nullable=False)
     percentage = db.Column(db.Integer, nullable=False)
     # foreign keys
-    evaluation_plan_id = db.Column(db.Integer, db.ForeignKey('evaluation_plan.id'))
+    course_id = db.Column(db.Integer, db.ForeignKey('course.id'))
+    # relations
+    grades = db.relationship('Grade', backref='evaluation')
 
     def serialize(self):
         return {
             "id": self.id,
             "name": self.name,
-            "percentage": self.percentage
+            "percentage": self.percentage,
+            "grades": list(map(lambda grade: grade.serialize(), self.grades))
         }
