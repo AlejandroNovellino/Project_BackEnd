@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 35bb02168854
+Revision ID: 933400ef34a2
 Revises: 
-Create Date: 2021-06-15 11:21:28.820135
+Create Date: 2021-06-17 17:42:44.836633
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '35bb02168854'
+revision = '933400ef34a2'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -26,9 +26,10 @@ def upgrade():
     sa.Column('age', sa.Integer(), nullable=False),
     sa.Column('nationality', sa.String(length=40), nullable=True),
     sa.Column('residence', sa.String(length=120), nullable=True),
-    sa.Column('career', sa.String(length=20), nullable=False),
+    sa.Column('career', sa.Enum('ingenieria', 'medicina', 'derecho', name='career'), nullable=False),
     sa.Column('type', sa.String(length=40), nullable=True),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('ci')
     )
     op.create_table('professor',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -42,10 +43,10 @@ def upgrade():
     )
     op.create_table('cathedra',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('name', sa.String(length=40), nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('code', sa.String(length=4), nullable=False),
     sa.Column('credits', sa.Integer(), nullable=False),
-    sa.Column('career', sa.String(length=40), nullable=False),
+    sa.Column('career', sa.Enum('ingenieria', 'medicina', 'derecho', name='career'), nullable=False),
     sa.Column('coordinator_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['coordinator_id'], ['professor.id'], ),
     sa.PrimaryKeyConstraint('id'),

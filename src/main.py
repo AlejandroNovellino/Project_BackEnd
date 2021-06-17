@@ -106,6 +106,39 @@ def create_cathedra():
 
     return jsonify(new_cathedra.serialize_when_created()), 200
 
+@app.route("/upload-cathedras", methods=["POST"])
+def upload_cathedras_file():
+    '''
+        Upload the data of cathedras from file
+    '''
+    # wb = workbook 
+    try:   
+        myFile = request.files["myFile"]
+        wb = load_workbook(myFile)    
+    except: 
+        return jsonify({"msg": "Hubo un problema abriendo el archivo"}), 500
+
+    for sheet_name in wb.sheetnames:
+        # ws = worksheet
+        ws = wb[sheet_name]
+        # the ws is a dictionary but the rows are tuples
+        for row in ws.iter_rows(min_row=2):
+            new_cathedra = Cathedra(
+                name=row[0].value,
+                code=row[1].value,
+                credits=row[2].value,
+                career=row[3].value
+            )
+            db.session.add(new_cathedra)
+    
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un problema creando la catedra"}), 500
+
+    return jsonify({"msg": "Se anadireron las catedras del archivo"}), 200
+
 # endpoints for professor
 @app.route("/professor", methods=["POST"])
 def create_professor():
@@ -144,34 +177,84 @@ def create_professor():
 
     return jsonify(new_professor.serialize_when_created()), 200
 
+@app.route("/upload-professors", methods=["POST"])
+def upload_professors_file():
+    '''
+        Upload the data of professors from file
+    '''
+    # wb = workbook 
+    try:   
+        myFile = request.files["myFile"]
+        wb = load_workbook(myFile)    
+    except: 
+        return jsonify({"msg": "Hubo un problema abriendo el archivo"}), 500
+
+    for sheet_name in wb.sheetnames:
+        # ws = worksheet
+        ws = wb[sheet_name]
+        # the ws is a dictionary but the rows are tuples
+        for row in ws.iter_rows(min_row=2):
+            new_professor = Professor(
+                full_name=row[0].value,
+                ci=row[1].value,
+                phone_number=row[2].value,
+                age=row[3].value,
+                nationality=row[4].value,
+                residence=row[5].value,
+                career=row[6].value
+            )
+            db.session.add(new_professor)
+            # save the professor to get the id
+            try:
+                db.session.commit()
+            except:
+                db.session.rollback()
+                return jsonify({"msg": "Hubo un problema creando el profesor"}), 500
+
+            # creating the list of codes
+            cathedras_codes = row[7].value[1:-1].split(',')
+            # creating the relation
+            for cathedra_code in cathedras_codes:
+                cathedra = Cathedra.query.filter_by(code=cathedra_code)
+                new_relation = Cathedra_asigns(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
+                db.session.add(new_relation)
+
+            try:
+                db.session.commit()
+            except: 
+                db.session.callback()
+                return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
+
+    return jsonify({"msg": "Se anadireron los profesores del archivo"}), 200
+
 # endpoints for student
 @app.route("/upload-students", methods=["POST"])
-def upload_file():
+def upload_students_file():
     '''
-        Upload the data of a file
+        Upload the data of students from file
     '''
-
-    myFile = request.files["myFile"]
-
     # wb = workbook 
-    wb = load_workbook(myFile)
-    sheet_name = wb.sheetnames[0]
-    # ws = worksheet
-    ws = wb[sheet_name]
-    # the ws is a dictionary but the rows are tuples
-
-    for row in ws.iter_rows(min_row=2):
-        new_student = Student(
-            full_name=row[0].value,
-            ci=row[1].value,
-            phone_number=row[2].value,
-            age=row[3].value,
-            nationality=row[4].value,
-            residence=row[5].value,
-            career=row[6].value
-        )
-        db.session.add(new_student)
-        print(new_student)
+    try: 
+        myFile = request.files["myFile"]
+        wb = load_workbook(myFile)
+    except: 
+        return jsonify({"msg": "Hubo un problema abriendo el archivo"}), 500
+    
+    for sheet_name in wb.sheetnames:
+        # ws = worksheet
+        ws = wb[sheet_name]
+        # the ws is a dictionary but the rows are tuples
+        for row in ws.iter_rows(min_row=2):
+            new_student = Student(
+                full_name=row[0].value,
+                ci=row[1].value,
+                phone_number=row[2].value,
+                age=row[3].value,
+                nationality=row[4].value,
+                residence=row[5].value,
+                career=row[6].value
+            )
+            db.session.add(new_student)
 
     try:
         db.session.commit()

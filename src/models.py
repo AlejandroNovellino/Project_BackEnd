@@ -13,9 +13,9 @@ class Role(enum.Enum):
 
 #The career should have a specific code i.e. fisica = 1856
 class Career(enum.Enum): 
-    fisica = 1
-    quimica = 2
-    contaduria = 3
+    ingenieria = 1
+    medicina = 2
+    derecho = 3
 
 class User(db.Model):
     __tablename__ = 'user'
@@ -87,6 +87,9 @@ class Common_data(db.Model):
         'polymorphic_on':type
     }
 
+    def __repr__(self):
+        return f"{self.full_name} {self.ci} {self.phone_number} {self.age} {self.nationality} {self.residence} {self.career}"
+
     def super_serialize(self):
         return {
             "fullname": self.full_name,
@@ -148,10 +151,10 @@ class Professor(Common_data, db.Model):
 class Cathedra(db.Model):
     __tablename__ = "cathedra"
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(40), nullable=False, unique=True)
+    name = db.Column(db.String(100), nullable=False)
     code = db.Column(db.String(4), nullable=False, unique=True)
     credits = db.Column(db.Integer, nullable=False)
-    career = db.Column(db.String(40), nullable=False)
+    career = db.Column(db.Enum(Career), nullable=False)
     # foreign keys
     coordinator_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
     # relations
@@ -159,13 +162,23 @@ class Cathedra(db.Model):
     courses = db.relationship("Course", backref="cathedra")
     professors = db.relationship('Cathedra_asigns', backref='cathedra')
 
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.name=kwargs["name"]
+        self.code=kwargs["code"]
+        self.credits=kwargs["credits"]
+        self.career=Career(kwargs["career"]).name
+
+    def __repr__(self):
+        return f"{self.name} {self.code} {self.credits} {self.career}"
+
     def serialize_when_created(self):
         return {
             "id": self.id,
             "name": self.name,
             "code": self.code,
             "credits": self.credits,
-            "career": self.career
+            "career": Career(self.career).name
         }
 
     def serialize(self):
@@ -208,7 +221,7 @@ class Student(Common_data, db.Model):
         )
 
     def __repr__(self):
-        return f'Student {self.id} {self.full_name}'
+        return super().__repr__()
 
     def serialize(self):
         return {
