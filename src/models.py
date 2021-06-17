@@ -11,6 +11,12 @@ class Role(enum.Enum):
     coordinator = 2
     professor = 3
 
+#The career should have a specific code i.e. fisica = 1856
+class Career(enum.Enum): 
+    fisica = 1
+    quimica = 2
+    contaduria = 3
+
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
@@ -67,12 +73,13 @@ class Common_data(db.Model):
     __tablename__ = 'common_data'
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(40), nullable=False)
-    ci = db.Column(db.String(20), nullable=False)
+    ci = db.Column(db.String(20), nullable=False, unique=True)
     phone_number = db.Column(db.String(20))
     age = db.Column(db.Integer, nullable=False)
     nationality = db.Column(db.String(40))
     residence = db.Column(db.String(120))
-    career = db.Column(db.String(20), nullable=False)
+    career = db.Column(db.Enum(Career), nullable=False)
+
     type = db.Column(db.String(40))
 
     __mapper_args__ = {
@@ -110,7 +117,7 @@ class Professor(Common_data, db.Model):
             age=kwargs["age"],
             nationality=kwargs["nationality"],
             residence=kwargs["residence"],
-            career=kwargs["career"]
+            career=Career(kwargs["career"]).name
         )
 
     def __repr__(self):
@@ -197,8 +204,11 @@ class Student(Common_data, db.Model):
             age=kwargs["age"],
             nationality=kwargs["nationality"],
             residence=kwargs["residence"],
-            career=kwargs["career"]
+            career=Career(kwargs["career"]).name
         )
+
+    def __repr__(self):
+        return f'Student {self.id} {self.full_name}'
 
     def serialize(self):
         return {

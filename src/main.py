@@ -2,6 +2,8 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
+from openpyxl import load_workbook
+
 from flask import Flask, request, jsonify, url_for, json
 from flask_migrate import Migrate
 from flask_swagger import swagger
@@ -9,14 +11,17 @@ from flask_cors import CORS
 from flask_jwt_extended import create_access_token, JWTManager
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Common_data, Professor, Cathedra, Cathedra_asigns, Student, Course, Inscription, Grade, Evaluation
-#from models import Person
+from models import db, User, Common_data, Professor, Cathedra, Cathedra_asigns, Student, Course, Inscription, Grade, Evaluation, Career
+
+#UPLOAD_FOLDER = '/files'
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_CONNECTION_STRING')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["JWT_SECRET_KEY"] = "01cdeef14f0a17d28d723f35a2ba3670"
+app.config['UPLOAD_FOLDER'] = '/files'
+
 MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
@@ -58,16 +63,25 @@ def log_in():
         "token": token
     }), 200
 
-# endpoints for cathedra
+# endpoint for getting the possibles career
+@app.route("/get-careers", methods=["GET"])
+def get_all_careers():
+    '''
+        Get all careers
+    '''
+    careers = []
+    for career in Career:
+        careers.append(career.name)
 
+    return jsonify(careers), 200
+
+# endpoints for cathedra
 @app.route("/cathedra", methods=["GET"])
 def get_all_cathedras():
     '''
         Get all cathedras
     '''
-    #cathedras = [cathedra.serialize() for cathedra in Cathedra.query.all()]
-    cathedras =  Cathedra.query.filter_by(code="0000")
-    print(cathedras[0].id)
+    cathedras = [cathedra.serialize() for cathedra in Cathedra.query.all()]
     return jsonify([cathedra.serialize_when_created() for cathedra in cathedras]), 200
 
 @app.route("/cathedra", methods=["POST"])
@@ -101,9 +115,9 @@ def create_professor():
     # creates the professor 
     data = json.loads(request.data)
     new_professor = Professor(
-        full_name=data["fullname"],
+        full_name=data["fullName"],
         ci=data["ci"],
-        phone_number=data["phone_number"],
+        phone_number=data["phoneNumber"],
         age=data["age"],
         nationality=data["nationality"],
         residence=data["residence"],
@@ -129,6 +143,44 @@ def create_professor():
         return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
 
     return jsonify(new_professor.serialize_when_created()), 200
+
+# endpoints for student
+@app.route("/upload-students", methods=["POST"])
+def upload_file():
+    '''
+        Upload the data of a file
+    '''
+
+    myFile = request.files["myFile"]
+
+    # wb = workbook 
+    wb = load_workbook(myFile)
+    sheet_name = wb.sheetnames[0]
+    # ws = worksheet
+    ws = wb[sheet_name]
+    # the ws is a dictionary but the rows are tuples
+
+    for row in ws.iter_rows(min_row=2):
+        new_student = Student(
+            full_name=row[0].value,
+            ci=row[1].value,
+            phone_number=row[2].value,
+            age=row[3].value,
+            nationality=row[4].value,
+            residence=row[5].value,
+            career=row[6].value
+        )
+        db.session.add(new_student)
+        print(new_student)
+
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un problema creando al estudiante"}), 500
+
+    return jsonify({"msg": "Se anadireron los estudiantes del archivo"}), 200
+
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
