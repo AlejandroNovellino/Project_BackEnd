@@ -41,9 +41,15 @@ def sitemap():
 @app.route("/sign-up", methods=["POST"])
 def sign_up():
     data = request.json
-    user = User.create(email=data.get('email'), password=data.get('password'), role=data.get('role'))
+
+    if 'professor_id' in data.keys():
+        user = User.create(email=data.get('email'), password=data.get('password'), role=data.get('role'), professor_id=data.get('professor_id'))
+    else :
+        user = User.create(email=data.get('email'), password=data.get('password'), role=data.get('role'))
+
     if not isinstance(user, User):
         return jsonify({"msg": "Ocurrio un problema interno"}), 500
+
     return jsonify(user.serialize()), 201
 
 @app.route("/log-in", methods=["POST"])
@@ -64,7 +70,7 @@ def log_in():
     }), 200
 
 # endpoint for getting the possibles career
-@app.route("/get-careers", methods=["GET"])
+@app.route("/careers", methods=["GET"])
 def get_all_careers():
     '''
         Get all careers
@@ -82,7 +88,7 @@ def get_all_cathedras():
         Get all cathedras
     '''
     cathedras = [cathedra.serialize() for cathedra in Cathedra.query.all()]
-    return jsonify([cathedra.serialize_when_created() for cathedra in cathedras]), 200
+    return jsonify([cathedra.serialize() for cathedra in cathedras]), 200
 
 @app.route("/cathedra", methods=["POST"])
 def create_cathedra():
@@ -104,7 +110,7 @@ def create_cathedra():
         db.session.rollback()
         return jsonify({"msg": "Hubo un error creando la materia"}), 500
 
-    return jsonify(new_cathedra.serialize_when_created()), 200
+    return jsonify(new_cathedra.serialize()), 200
 
 @app.route("/upload-cathedras", methods=["POST"])
 def upload_cathedras_file():
@@ -175,7 +181,7 @@ def create_professor():
         db.session.rollback()
         return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
 
-    return jsonify(new_professor.serialize_when_created()), 200
+    return jsonify(new_professor.serialize()), 200
 
 @app.route("/upload-professors", methods=["POST"])
 def upload_professors_file():

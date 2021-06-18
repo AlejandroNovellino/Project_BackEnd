@@ -34,6 +34,8 @@ class User(db.Model):
         self.salt = os.urandom(16).hex()
         self.set_password(kwargs.get('password'))
         self.role = Role(kwargs.get('role')).name
+        if kwargs.get('role') != 1:
+            self.professor_id = kwargs.get('professor_id')
 
     @classmethod
     def create(cls, **kwargs):
@@ -62,12 +64,15 @@ class User(db.Model):
         return '<User %r>' % self.email
 
     def serialize(self):
-        return {
+        return_dict = {
             "id": self.id,
             "email": self.email,
             "role": self.role.name
-            # do not serialize the password, its a security breach
         }
+        if self.professor:
+            return_dict["professor"] = self.professor.serialize_when_created()
+
+        return return_dict
 
 class Common_data(db.Model):
     __tablename__ = 'common_data'
@@ -98,7 +103,7 @@ class Common_data(db.Model):
             "age": self.age,
             "nationality": self.nationality,
             "residence": self.residence,
-            "career": self.career
+            "career": self.career.name
         }
 
 class Professor(Common_data, db.Model):
@@ -126,27 +131,16 @@ class Professor(Common_data, db.Model):
     def __repr__(self):
         return f'Professor {self.id} {self.full_name}'
 
-    def serialize_when_created(self):
-        dict_to_return = self.super_serialize()
-        dict_to_return.update(
-            {"cathedras":  list(map(lambda cathedra: cathedra.cathedra.serialize_when_created()["name"], self.cathedras))}
-        )
-        return dict_to_return
-
     def serialize(self):
-        return {
-            "id": self.id,
-            "fullname": self.full_name,
-            "ci": self.ci,
-            "phone_number": self.phone_number,
-            "age": self.age,
-            "nationality": self.nationality,
-            "residence": self.residence,
-            "career": self.career,
-            "courses": list(map(lambda course: course.serialize()["title"], self.courses)),
-            "students": list(map(lambda student: student.serialize()["name"], self.students)),
-            "cathedras": list(map(lambda cathedra: cathedra.serialize()["name"], self.cathedras))
-        }
+        return_dict = self.super_serialize()
+
+        if self.courses:
+            return_dict["courses"] = list(map(lambda course: course.serialize()["title"], self.courses))
+
+        if self.cathedras:
+            return_dict["cathedras"] = list(map(lambda cathedra: cathedra.serialize()["name"], self.cathedras))
+
+        return return_dict
 
 class Cathedra(db.Model):
     __tablename__ = "cathedra"
@@ -157,8 +151,9 @@ class Cathedra(db.Model):
     career = db.Column(db.Enum(Career), nullable=False)
     # foreign keys
     coordinator_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
-    # relations
+    # one to one relation
     coordinator = db.relationship("Professor", backref=db.backref("cathedra", uselist=False))
+    # one to many
     courses = db.relationship("Course", backref="cathedra")
     professors = db.relationship('Cathedra_asigns', backref='cathedra')
 
@@ -172,25 +167,24 @@ class Cathedra(db.Model):
     def __repr__(self):
         return f"{self.name} {self.code} {self.credits} {self.career}"
 
-    def serialize_when_created(self):
-        return {
+    def serialize(self):
+        return_dict = {
             "id": self.id,
             "name": self.name,
-            "code": self.code,
             "credits": self.credits,
-            "career": Career(self.career).name
+            "career": self.career.name
         }
 
-    def serialize(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "credits": self.credits,
-            "career": self.career,
-            "coordinator": list(map(lambda coordinator: coordinator.serialize()["name"], self.coordinator)),
-            "courses": list(map(lambda course: course.serialize()["title"], self.courses)),
-            "professors": list(map(lambda professor: professor.serialize()["name"], self.professors))
-        }
+        if self.coordinator:
+            return_dict["coordinator"] = list(map(lambda coordinator: coordinator.serialize()["name"], self.coordinator))
+        
+        if self.courses:
+            return_dict["courses"] = list(map(lambda course: course.serialize()["title"], self.courses))
+
+        if self.professors:
+            return_dict["professors"] = list(map(lambda professor: professor.serialize()["name"], self.professors))
+
+        return return_dict
 
 class Cathedra_asigns(db.Model):
     __tablename__ = "cathedra_asigns"
@@ -224,7 +218,7 @@ class Student(Common_data, db.Model):
         return super().__repr__()
 
     def serialize(self):
-        return {
+        return_dict = {
             "id": self.id,
             "fullname": self.full_name,
             "ci": self.ci,
@@ -232,9 +226,13 @@ class Student(Common_data, db.Model):
             "age": self.age,
             "nationality": self.nationality,
             "residence": self.residence,
-            "career": self.career,
-            "notes": list(map(lambda note: note.serialize()["note"], self.notes))
+            "career": self.career.name
         }
+
+        if self.grades:
+            return_dict["grades"] = list(map(lambda grade: grade.serialize()["value"], self.grades))
+
+        return return_dict
 
 class Course(db.Model):
     __tablename__ = 'course'
@@ -249,12 +247,24 @@ class Course(db.Model):
     evaluations = db.relationship('Evaluation', backref='course')
 
     def serialize(self):
-        return {
+        return_dict = {
             "id": self.id,
             "title": self.title,
-            "init_date": self.init_date,
-            "students": map(list(lambda student: student.serialize()["name"], self.students))
+            "init_date": self.init_date
         }
+        if self.cathedra_id:
+            return_dict["cathedra_id"] = self.cathedra_id
+
+        if self.professor_id:
+            return_dict["professor_id"] = self.professor_id
+        
+        if self.inscriptions:
+            return_dict["inscriptions"] = list(map(lambda inscription: inscription.serialize(), self.inscriptions))
+        
+        if self.evaluations:
+            return_dict["evaluations"] - list(map(lambda evaluation: evaluation.serialize(), self.evaluations)) 
+
+        return return_dict 
 
 class Inscription(db.Model):
     __tablename_ = 'inscription'
@@ -266,10 +276,20 @@ class Inscription(db.Model):
     grades = db.relationship('Grade', backref='inscription')
 
     def serialize(self):
-        return {
-            "id": self.id,
-            "grades": list(map(lambda grade: grade.serialize(), self.grades))
+        return_dict = {
+            "id": self.id
         }
+
+        if self.student_id:
+            return_dict["student_id"] = self.student_id
+
+        if self.course_id:
+            return_dict["course_id"] = self.course_id
+
+        if self.grades:
+            return_dict["grades"] = list(map(lambda grade: grade.serialize(), self.grades))
+
+        return return_dict
 
 class Grade(db.Model):
     __tablename__ = 'grade'
@@ -281,10 +301,21 @@ class Grade(db.Model):
     inscription_id = db.Column(db.Integer, db.ForeignKey('inscription.id'))
 
     def serialize(self):
-        return {
+        return_dict = {
             "id": self.id,
             "value": self.value
         }
+
+        if self.student_id:
+            return_dict["student_id"] = self.student_id
+
+        if self.evaluation_id:
+            return_dict["evaluation_id"] = self.evaluation_id
+
+        if self.inscription_id:
+            return_dict["inscription_id"] = self.inscription_id
+
+        return return_dict
 
 class Evaluation(db.Model):
     __tablename__ = 'evaluation'
@@ -297,9 +328,15 @@ class Evaluation(db.Model):
     grades = db.relationship('Grade', backref='evaluation')
 
     def serialize(self):
-        return {
+        return_dict = {
             "id": self.id,
             "name": self.name,
-            "percentage": self.percentage,
-            "grades": list(map(lambda grade: grade.serialize(), self.grades))
+            "percentage": self.percentage
         }
+
+        if self.course_id: 
+            return_dict["course_id"] = self.course_id
+
+        if self.grades:
+            return_dict["grades"] = list(map(lambda grade: grade.serialize(), self.grades))
+
