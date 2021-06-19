@@ -88,7 +88,7 @@ def get_all_cathedras():
         Get all cathedras
     '''
     cathedras = [cathedra.serialize() for cathedra in Cathedra.query.all()]
-    return jsonify([cathedra.serialize() for cathedra in cathedras]), 200
+    return jsonify(cathedras), 200
 
 @app.route("/cathedra", methods=["POST"])
 def create_cathedra():
@@ -111,6 +111,16 @@ def create_cathedra():
         return jsonify({"msg": "Hubo un error creando la materia"}), 500
 
     return jsonify(new_cathedra.serialize()), 200
+
+@app.route("/cathedras/<int:career>", methods=["GET"])
+def get_cathedras_of_career(career):
+    '''
+        Return all the cathedras of a career
+    '''
+
+    cathedras = Cathedra.query.filter_by(career=Career(career).name)
+
+    return jsonify([cathedra.serialize() for cathedra in cathedras]), 200
 
 @app.route("/upload-cathedras", methods=["POST"])
 def upload_cathedras_file():
@@ -182,6 +192,10 @@ def create_professor():
         return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
 
     return jsonify(new_professor.serialize()), 200
+
+#@app.route("/professor-with-user", methods=["POST"])
+#def professor_with_user():
+
 
 @app.route("/upload-professors", methods=["POST"])
 def upload_professors_file():

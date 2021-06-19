@@ -129,16 +129,16 @@ class Professor(Common_data, db.Model):
         )
 
     def __repr__(self):
-        return f'Professor {self.id} {self.full_name}'
+        return f'{self.full_name} {self.ci}'
 
     def serialize(self):
         return_dict = self.super_serialize()
 
         if self.courses:
-            return_dict["courses"] = list(map(lambda course: course.serialize()["title"], self.courses))
+            return_dict["courses"] = list(map(lambda course: course.course.title, self.courses))
 
         if self.cathedras:
-            return_dict["cathedras"] = list(map(lambda cathedra: cathedra.serialize()["name"], self.cathedras))
+            return_dict["cathedras"] = list(map(lambda cathedra: cathedra.cathedra.name, self.cathedras))
 
         return return_dict
 
@@ -171,18 +171,19 @@ class Cathedra(db.Model):
         return_dict = {
             "id": self.id,
             "name": self.name,
+            "code": self.code,
             "credits": self.credits,
             "career": self.career.name
         }
 
         if self.coordinator:
-            return_dict["coordinator"] = list(map(lambda coordinator: coordinator.serialize()["name"], self.coordinator))
+            return_dict["coordinator"] = list(map(lambda coordinator: coordinator.__repr__(), self.coordinator))
         
         if self.courses:
-            return_dict["courses"] = list(map(lambda course: course.serialize()["title"], self.courses))
+            return_dict["courses"] = list(map(lambda course: course.course.title, self.courses))
 
         if self.professors:
-            return_dict["professors"] = list(map(lambda professor: professor.serialize()["name"], self.professors))
+            return_dict["professors"] = list(map(lambda professor: professor.professor.__repr__(), self.professors))
 
         return return_dict
 
@@ -192,6 +193,12 @@ class Cathedra_asigns(db.Model):
     # foreign keys
     professor_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
     cathedra_id = db.Column(db.Integer, db.ForeignKey('cathedra.id'))
+
+    def serialize(self):
+        return {
+            "professor_id": self.professor_id,
+            "cathedra_id": self.cathedra_id
+        }
 
 class Student(Common_data, db.Model):
     __tablename__ = "student"
