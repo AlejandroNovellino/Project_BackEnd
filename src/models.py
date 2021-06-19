@@ -74,8 +74,8 @@ class User(db.Model):
 
         return return_dict
 
-class Common_data(db.Model):
-    __tablename__ = 'common_data'
+class CommonData(db.Model):
+    __tablename__ = 'commonData'
     id = db.Column(db.Integer, primary_key=True)
     full_name = db.Column(db.String(40), nullable=False)
     ci = db.Column(db.String(20), nullable=False, unique=True)
@@ -88,7 +88,7 @@ class Common_data(db.Model):
     type = db.Column(db.String(40))
 
     __mapper_args__ = {
-        'polymorphic_identity':'common_data',
+        'polymorphic_identity':'commonData',
         'polymorphic_on':type
     }
 
@@ -106,12 +106,12 @@ class Common_data(db.Model):
             "career": self.career.name
         }
 
-class Professor(Common_data, db.Model):
+class Professor(CommonData, db.Model):
     __tablename__ = 'professor'
-    id = db.Column(db.Integer, db.ForeignKey('common_data.id'), primary_key=True)
+    id = db.Column(db.Integer, db.ForeignKey('commonData.id'), primary_key=True)
     # relations
     courses = db.relationship("Course", backref="professor")
-    cathedras = db.relationship('Cathedra_asigns', backref='professor')
+    cathedras = db.relationship('CathedraAssign', backref='professor')
 
     __mapper_args__ = {
         'polymorphic_identity':'professor'
@@ -156,7 +156,7 @@ class Cathedra(db.Model):
     # one to many relation
     courses = db.relationship("Course", backref="cathedra")
     # many to many relation
-    professors = db.relationship('Cathedra_asigns', backref='cathedra')
+    professors = db.relationship('CathedraAssign', backref='cathedra')
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -178,7 +178,7 @@ class Cathedra(db.Model):
         }
 
         if self.coordinator:
-            return_dict["coordinator"] = list(map(lambda coordinator: coordinator.__repr__(), self.coordinator))
+            return_dict["coordinator"] = self.coordinator.__repr__()
         
         if self.courses:
             return_dict["courses"] = list(map(lambda course: course.course.title, self.courses))
@@ -188,8 +188,8 @@ class Cathedra(db.Model):
 
         return return_dict
 
-class Cathedra_asigns(db.Model):
-    __tablename__ = "cathedra_asigns"
+class CathedraAssign(db.Model):
+    __tablename__ = "cathedraAssign"
     id = db.Column(db.Integer, primary_key=True)
     # foreign keys
     professor_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
@@ -201,9 +201,9 @@ class Cathedra_asigns(db.Model):
             "cathedra_id": self.cathedra_id
         }
 
-class Student(Common_data, db.Model):
+class Student(CommonData, db.Model):
     __tablename__ = "student"
-    id = db.Column(db.Integer, db.ForeignKey('common_data.id'), primary_key=True)
+    id = db.Column(db.Integer, db.ForeignKey('commonData.id'), primary_key=True)
     # relations 
     grades = db.relationship('Grade', backref='student')
 
@@ -246,7 +246,10 @@ class Course(db.Model):
     __tablename__ = 'course'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(40))
+    code = db.Column(db.String(8), unique=True)
     init_date = db.Column(db.DateTime(timezone=False))
+    finish_date = db.Column(db.DateTime(timezone=False))
+    is_active = db.Column(db.Boolean(), default=False, nullable=False)
     # foreign keys
     cathedra_id = db.Column(db.Integer, db.ForeignKey('cathedra.id'))
     professor_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
@@ -258,7 +261,9 @@ class Course(db.Model):
         return_dict = {
             "id": self.id,
             "title": self.title,
-            "init_date": self.init_date
+            "init_date": self.init_date,
+            "finish_date": self.finish_date,
+            "is_active": self.is_active
         }
         if self.cathedra_id:
             return_dict["cathedra_id"] = self.cathedra_id

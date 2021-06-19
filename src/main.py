@@ -11,7 +11,7 @@ from flask_cors import CORS
 from flask_jwt_extended import create_access_token, JWTManager
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Common_data, Professor, Cathedra, Cathedra_asigns, Student, Course, Inscription, Grade, Evaluation, Career
+from models import db, User, CommonData, Professor, Cathedra, CathedraAssign, Student, Course, Inscription, Grade, Evaluation, Career
 
 #UPLOAD_FOLDER = '/files'
 
@@ -182,7 +182,7 @@ def upload_cathedras_file():
 #     # creates the relations with the cathedras
 #     for cathedra_code in data["cathedras"]:
 #         cathedra = Cathedra.query.filter_by(code=cathedra_code)
-#         new_relation = Cathedra_asigns(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
+#         new_relation = CathedraAssign(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
 #         db.session.add(new_relation)
 
 #     try:
@@ -219,9 +219,8 @@ def create_professor():
     # loop trough the cathedras codes
     for cathedra_code in data["cathedras"]:
         cathedra = Cathedra.query.filter_by(code=cathedra_code).all()[0]
-        print(cathedra)
         # create the relation
-        new_relation = Cathedra_asigns(professor_id=new_professor.id, cathedra_id=cathedra.id)
+        new_relation = CathedraAssign(professor_id=new_professor.id, cathedra_id=cathedra.id)
         db.session.add(new_relation)
         # if the user is a coordinator create the relation with the cathedra
         if data["role"] == 2:
@@ -292,7 +291,7 @@ def upload_professors_file():
             # creating the relation
             for cathedra_code in cathedras_codes:
                 cathedra = Cathedra.query.filter_by(code=cathedra_code)
-                new_relation = Cathedra_asigns(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
+                new_relation = CathedraAssign(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
                 db.session.add(new_relation)
 
             try:
