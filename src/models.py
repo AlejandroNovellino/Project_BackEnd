@@ -26,7 +26,7 @@ class User(db.Model):
     role = db.Column(db.Enum(Role), nullable=False)
     # foreign keys
     professor_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
-    # relations
+    # one to one relation
     professor = db.relationship('Professor', backref=db.backref("user", uselist=False))
 
     def __init__(self, **kwargs):
@@ -70,7 +70,7 @@ class User(db.Model):
             "role": self.role.name
         }
         if self.professor:
-            return_dict["professor"] = self.professor.serialize_when_created()
+            return_dict["professor"] = self.professor.serialize()
 
         return return_dict
 
@@ -153,8 +153,9 @@ class Cathedra(db.Model):
     coordinator_id = db.Column(db.Integer, db.ForeignKey('professor.id'))
     # one to one relation
     coordinator = db.relationship("Professor", backref=db.backref("cathedra", uselist=False))
-    # one to many
+    # one to many relation
     courses = db.relationship("Course", backref="cathedra")
+    # many to many relation
     professors = db.relationship('Cathedra_asigns', backref='cathedra')
 
     def __init__(self, **kwargs):

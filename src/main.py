@@ -156,13 +156,50 @@ def upload_cathedras_file():
     return jsonify({"msg": "Se anadireron las catedras del archivo"}), 200
 
 # endpoints for professor
+# @app.route("/professor", methods=["POST"])
+# def create_professor():
+#     '''
+#         Creates a new professor
+#     '''
+#     # creates the professor 
+#     data = json.loads(request.data)
+#     new_professor = Professor(
+#         full_name=data["fullName"],
+#         ci=data["ci"],
+#         phone_number=data["phoneNumber"],
+#         age=data["age"],
+#         nationality=data["nationality"],
+#         residence=data["residence"],
+#         career=data["career"]
+#     )
+#     db.session.add(new_professor)
+#     try:
+#         db.session.commit()
+#     except:
+#         db.session.rollback()
+#         return jsonify({"msg": "Hubo un error creando al profesor"}), 500
+
+#     # creates the relations with the cathedras
+#     for cathedra_code in data["cathedras"]:
+#         cathedra = Cathedra.query.filter_by(code=cathedra_code)
+#         new_relation = Cathedra_asigns(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
+#         db.session.add(new_relation)
+
+#     try:
+#         db.session.commit()
+#     except:
+#         db.session.rollback()
+#         return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
+
+#     return jsonify(new_professor.serialize()), 200
+
 @app.route("/professor", methods=["POST"])
 def create_professor():
     '''
-        Creates a new professor
+        Creates a professor with its user
     '''
-    # creates the professor 
-    data = json.loads(request.data)
+    data = request.json
+    # create the new professor
     new_professor = Professor(
         full_name=data["fullName"],
         ci=data["ci"],
@@ -179,23 +216,42 @@ def create_professor():
         db.session.rollback()
         return jsonify({"msg": "Hubo un error creando al profesor"}), 500
 
-    # creates the relations with the cathedras
+    # loop trough the cathedras codes
     for cathedra_code in data["cathedras"]:
-        cathedra = Cathedra.query.filter_by(code=cathedra_code)
-        new_relation = Cathedra_asigns(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
+        cathedra = Cathedra.query.filter_by(code=cathedra_code).all()[0]
+        print(cathedra)
+        # create the relation
+        new_relation = Cathedra_asigns(professor_id=new_professor.id, cathedra_id=cathedra.id)
         db.session.add(new_relation)
+        # if the user is a coordinator create the relation with the cathedra
+        if data["role"] == 2:
+            print("assigning coordinator")
+            cathedra.coordinator_id = new_professor.id
 
     try:
         db.session.commit()
     except:
         db.session.rollback()
         return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
+    
+    # create the user with the professor id
+    new_user = User(
+        email=data['email'],
+        password=data['ci'], 
+        role=data['role'], 
+        professor_id=new_professor.id
+    )
+    db.session.add(new_user)
 
-    return jsonify(new_professor.serialize()), 200
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify("Hubo un problema creando el usuario"), 500 
 
-#@app.route("/professor-with-user", methods=["POST"])
-#def professor_with_user():
-
+    return jsonify({
+            "user": new_user.serialize()
+        }), 200
 
 @app.route("/upload-professors", methods=["POST"])
 def upload_professors_file():
@@ -244,6 +300,21 @@ def upload_professors_file():
             except: 
                 db.session.callback()
                 return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
+
+            # create the user with the professor id
+            new_user = User(
+                email=row[8].value,
+                password=row[1].value, 
+                role=row[9].value, 
+                professor_id=new_professor.id
+            )
+            db.session.add(new_user)
+
+            try:
+                db.session.commit()
+            except:
+                db.session.rollback()
+                return jsonify("Hubo un problema creando el usuario"), 500 
 
     return jsonify({"msg": "Se anadireron los profesores del archivo"}), 200
 
