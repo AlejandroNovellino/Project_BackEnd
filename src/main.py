@@ -3,6 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 import os
 from openpyxl import load_workbook
+import datetime
 
 from flask import Flask, request, jsonify, url_for, json
 from flask_migrate import Migrate
@@ -354,6 +355,48 @@ def upload_students_file():
 
     return jsonify({"msg": "Se anadireron los estudiantes del archivo"}), 200
 
+# endpoints for courses
+@app.route("/upload-courses", methods=["POST"])
+def upload_courses_file():
+    '''
+        Upload the data of courses from file
+    '''
+    # wb = workbook 
+    try: 
+        myFile = request.files["myFile"]
+        wb = load_workbook(myFile)
+    except: 
+        return jsonify({"msg": "Hubo un problema abriendo el archivo"}), 500
+    
+    for sheet_name in wb.sheetnames:
+        # ws = worksheet
+        ws = wb[sheet_name]
+        # the ws is a dictionary but the rows are tuples
+        for row in ws.iter_rows(min_row=2):
+            try:
+                cathedra = Cathedra.query.filter_by(code=str(row[5].value)).all()[0]
+                professor = Professor.query.filter_by(ci=str(row[6].value)).all()[0]
+            except:
+                return jsonify({"msg": "Catedra o profesor no existen"}), 400
+
+            new_course = Course(
+                title=row[0].value,
+                code=row[1].value,
+                init_date=row[2].value,
+                finish_date=row[3].value,
+                is_active=row[4].value,
+                cathedra_id=cathedra.id,
+                professor_id=professor.id
+            )
+            db.session.add(new_course)
+
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un problema creando el curso"}), 500
+
+    return jsonify({"msg": "Se anadireron los cursos del archivo"}), 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
