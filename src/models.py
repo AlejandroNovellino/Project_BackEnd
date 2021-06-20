@@ -181,7 +181,7 @@ class Cathedra(db.Model):
             return_dict["coordinator"] = self.coordinator.__repr__()
         
         if self.courses:
-            return_dict["courses"] = list(map(lambda course: course.course.title, self.courses))
+            return_dict["courses"] = list(map(lambda course: course.title, self.courses))
 
         if self.professors:
             return_dict["professors"] = list(map(lambda professor: professor.professor.__repr__(), self.professors))
@@ -261,6 +261,7 @@ class Course(db.Model):
         return_dict = {
             "id": self.id,
             "title": self.title,
+            "code": self.code,
             "init_date": self.init_date,
             "finish_date": self.finish_date,
             "is_active": self.is_active

@@ -319,6 +319,31 @@ def upload_professors_file():
     return jsonify({"msg": "Se anadireron los profesores del archivo"}), 200
 
 # endpoints for student
+@app.route("/student", methods=["POST"])
+def create_student():
+    '''
+        Create a student
+    '''
+    data = request.json
+    new_student = Student(
+        full_name=data["fullName"],
+        ci=data["ci"],
+        phone_number=data["phoneNumber"],
+        age=data["age"],
+        nationality=data["nationality"],
+        residence=data["residence"],
+        career=data["career"]
+    )
+    db.session.add(new_student)
+
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un error creando el estudiante"}), 500
+    
+    return jsonify(new_student.serialize()), 200
+
 @app.route("/upload-students", methods=["POST"])
 def upload_students_file():
     '''
@@ -355,7 +380,50 @@ def upload_students_file():
 
     return jsonify({"msg": "Se anadireron los estudiantes del archivo"}), 200
 
+# endpoints for inscriptions
+@app.route("/inscription", methods=["POST"])
+def create_inscription():
+    '''
+        Creates a inscription
+    '''
+    data = request.json
+    new_inscription = Inscription(student_id=data["student_id"], course_id=data["course_id"])
+    db.session.add(new_inscription)
+
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un error creando la inscripcion"}), 500
+    
+    return jsonify(new_inscription.serialize()), 200
+
 # endpoints for courses
+@app.route("/courses/<int:career>", methods=["GET"])
+def get_courses_career(career):
+    '''
+        Get all the active courses from a career
+    '''
+    cathedras = Cathedra.query.filter_by(career=Career(career).name).all()
+    courses = []
+    for cathedra in cathedras:
+        if cathedra.courses:
+            for course in cathedra.courses:
+                if course.is_active:
+                    courses.append(course)
+
+    return jsonify([course.serialize() for course in courses]), 200
+
+@app.route("/courses/byCode/<code>", methods=["GET"])
+def get_course_by_code(code):
+    '''
+        Get a course by its code
+    '''
+    course = Course.query.filter_by(code=str(code)).all()[0]
+
+    return jsonify(course.serialize()), 200
+
+
 @app.route("/upload-courses", methods=["POST"])
 def upload_courses_file():
     '''
