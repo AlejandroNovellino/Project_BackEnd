@@ -504,6 +504,26 @@ def create_evaluation():
 
     return jsonify(new_evaluation.serialize()), 200
 
+# endpoints for grades
+@app.route("/upload-grades", methods=["POST"])
+def upload_courses_file():
+    '''
+        Upload the data of grades from file
+    '''
+    # wb = workbook 
+    try: 
+        myFile = request.files["myFile"]
+        wb = load_workbook(myFile)
+    except: 
+        return jsonify({"msg": "Hubo un problema abriendo el archivo"}), 500
+    
+    for sheet_name in wb.sheetnames:
+        # ws = worksheet
+        ws = wb[sheet_name]
+        # the ws is a dictionary but the rows are tuples
+        #for row in ws.iter_rows(min_row=2):
+            
+
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 4000))

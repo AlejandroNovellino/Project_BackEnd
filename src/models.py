@@ -205,7 +205,7 @@ class Student(CommonData, db.Model):
     __tablename__ = "student"
     id = db.Column(db.Integer, db.ForeignKey('commonData.id'), primary_key=True)
     # relations 
-    grades = db.relationship('Grade', backref='student')
+    inscriptions = db.relationship('Inscription', backref='student')
 
     __mapper_args__ = {
         'polymorphic_identity':'student'
@@ -237,8 +237,8 @@ class Student(CommonData, db.Model):
             "career": self.career.name
         }
 
-        if self.grades:
-            return_dict["grades"] = list(map(lambda grade: grade.serialize()["value"], self.grades))
+        if self.inscriptions:
+            return_dict["inscriptions"] = list(map(lambda inscription: inscription.serialize(), self.inscriptions))
 
         return return_dict
 
@@ -310,7 +310,6 @@ class Grade(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     value = db.Column(db.Integer, nullable=False)
     # foreign keys
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'))
     evaluation_id = db.Column(db.Integer, db.ForeignKey('evaluation.id'))
     inscription_id = db.Column(db.Integer, db.ForeignKey('inscription.id'))
 
