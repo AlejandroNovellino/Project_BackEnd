@@ -225,7 +225,6 @@ def create_professor():
         db.session.add(new_relation)
         # if the user is a coordinator create the relation with the cathedra
         if data["role"] == 2:
-            print("assigning coordinator")
             cathedra.coordinator_id = new_professor.id
 
     try:
@@ -289,11 +288,15 @@ def upload_professors_file():
 
             # creating the list of codes
             cathedras_codes = row[7].value[1:-1].split(',')
-            # creating the relation
+            # creating the relations
             for cathedra_code in cathedras_codes:
-                cathedra = Cathedra.query.filter_by(code=cathedra_code)
-                new_relation = CathedraAssign(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
+                cathedra = Cathedra.query.filter_by(code=cathedra_code).all()[0]
+                # creates the relation
+                new_relation = CathedraAssign(professor_id=new_professor.id, cathedra_id=cathedra.id)
                 db.session.add(new_relation)
+                # if the user is a coordinator create the relation with the cathedra
+                if row[9].value == 2:
+                    cathedra.coordinator_id = new_professor.id
 
             try:
                 db.session.commit()
@@ -506,7 +509,7 @@ def create_evaluation():
 
 # endpoints for grades
 @app.route("/upload-grades", methods=["POST"])
-def upload_courses_file():
+def upload_grades_file():
     '''
         Upload the data of grades from file
     '''
@@ -521,8 +524,36 @@ def upload_courses_file():
         # ws = worksheet
         ws = wb[sheet_name]
         # the ws is a dictionary but the rows are tuples
-        #for row in ws.iter_rows(min_row=2):
-            
+        for row in ws.iter_rows(min_row=2):
+            course_code = str(row[0].value)
+            student_ci = str(row[1].value)
+            evaluation_name = row[2].value
+            evaluation_percentage = row[3].value
+            grade_value = row[4].value
+            # get the course by code
+            course = Course.query.filter_by(code=course_code).all()[0]
+            # get the student by ci
+            student = Student.query.filter_by(ci=student_ci).all()[0]
+            # get the inscription by the student id
+            inscription = Inscription.query.filter_by(student_id=student.id).all()[0]
+            # create the evaluation
+            new_evaluation = Evaluation(name=evaluation_name, percentage=evaluation_percentage, course_id=course.id)
+            db.session.add(new_evaluation)
+            try: 
+                db.session.commit()
+            except:
+                db.session.rollback()
+                return jsonify({"msg": "Hubo un problema creando la evaluacion"}), 500
+            # create the grade
+            new_grade = Grade(value=grade_value, evaluation_id=new_evaluation.id, inscription_id=inscription.id)
+            db.session.add(new_grade)
+            try:
+                db.session.commit()
+            except:
+                db.session.rollback()
+                return jsonify({"msg": "Hubo un rpblema creando la nota"}), 500
+    
+    return jsonify({"msg": "Se anadireron los notas del archivo"}), 200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
