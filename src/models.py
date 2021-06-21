@@ -135,10 +135,10 @@ class Professor(CommonData, db.Model):
         return_dict = self.super_serialize()
 
         if self.courses:
-            return_dict["courses"] = list(map(lambda course: course.course.title, self.courses))
+            return_dict["courses"] = list(map(lambda course: {"id": course.id, "title": course.title,"code":course.code}, self.courses))
 
         if self.cathedras:
-            return_dict["cathedras"] = list(map(lambda cathedra: cathedra.cathedra.name, self.cathedras))
+            return_dict["cathedras"] = list(map(lambda cathedra: cathedra.cathedra.code, self.cathedras))
 
         return return_dict
 
@@ -276,7 +276,7 @@ class Course(db.Model):
             return_dict["inscriptions"] = list(map(lambda inscription: inscription.serialize(), self.inscriptions))
         
         if self.evaluations:
-            return_dict["evaluations"] - list(map(lambda evaluation: evaluation.serialize(), self.evaluations)) 
+            return_dict["evaluations"] = list(map(lambda evaluation: evaluation.serialize(), self.evaluations)) 
 
         return return_dict 
 

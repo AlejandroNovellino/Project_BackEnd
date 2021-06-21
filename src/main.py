@@ -466,6 +466,29 @@ def upload_courses_file():
 
     return jsonify({"msg": "Se anadireron los cursos del archivo"}), 200
 
+# endpoints for the evaluation
+@app.route("/evaluation", methods=["POST"])
+def create_evaluation():
+    '''
+        Creates an evaluation
+    '''
+    data = request.json
+
+    new_evaluation = Evaluation(
+        name=data["name"],
+        percentage=data["percentage"],
+        course_id=data["course_id"]
+    )
+    db.session.add(new_evaluation)
+
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un problema creando la evaluacion"}), 500
+
+    return jsonify(new_evaluation.serialize()), 200
+
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 4000))
