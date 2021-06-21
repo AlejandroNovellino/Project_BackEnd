@@ -372,11 +372,26 @@ def upload_students_file():
             )
             db.session.add(new_student)
 
-    try:
-        db.session.commit()
-    except:
-        db.session.rollback()
-        return jsonify({"msg": "Hubo un problema creando al estudiante"}), 500
+            try:
+                db.session.commit()
+            except:
+                db.session.rollback()
+                return jsonify({"msg": "Hubo un problema creando al estudiante"}), 500
+
+            # creating the list of codes
+            courses_codes = row[7].value[1:-1].split(',')
+            # creating the inscriptions
+            for course_code in courses_codes:
+                course = Course.query.filter_by(code=course_code).all()[0]
+
+                new_inscription = Inscription(student_id=new_student.id, course_id=course.id)
+                db.session.add(new_inscription)
+
+                try:
+                    db.session.commit()
+                except:
+                    db.session.rollback()
+                    return jsonify({"msg": "Hubo un problema creando la inscripcion"}), 500
 
     return jsonify({"msg": "Se anadireron los estudiantes del archivo"}), 200
 
