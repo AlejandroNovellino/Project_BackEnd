@@ -305,6 +305,15 @@ def create_professor():
             "user": new_user.serialize()
         }), 200
 
+@app.route("/professors/info", methods=["GET"])
+def get_professors_info():
+    '''
+        Get the info of all the careers
+    '''
+    professors_info = Professor.query.all()
+    
+    return jsonify([professor.serialize() for professor in professors_info]), 200
+
 @app.route("/upload-professors", methods=["POST"])
 def upload_professors_file():
     '''
