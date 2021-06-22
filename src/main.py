@@ -409,6 +409,15 @@ def create_student():
     
     return jsonify(new_student.serialize()), 200
 
+@app.route("/students/info", methods=["GET"])
+def get_students_info():
+    '''
+        Get the info of all the careers
+    '''
+    students_info = Student.query.all()
+    
+    return jsonify([student.serialize() for student in students_info]), 200
+
 @app.route("/upload-students", methods=["POST"])
 def upload_students_file():
     '''
