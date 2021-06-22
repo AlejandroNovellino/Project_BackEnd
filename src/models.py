@@ -319,9 +319,6 @@ class Grade(db.Model):
             "value": self.value
         }
 
-        if self.student_id:
-            return_dict["student_id"] = self.student_id
-
         if self.evaluation_id:
             return_dict["evaluation_id"] = self.evaluation_id
 

@@ -2,10 +2,13 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
+import shutil
 from openpyxl import load_workbook
+from openpyxl import Workbook
 import datetime
+from werkzeug.utils import secure_filename
 
-from flask import Flask, request, jsonify, url_for, json
+from flask import Flask, request, jsonify, url_for, json, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
@@ -16,7 +19,7 @@ from models import db, User, CommonData, Professor, Cathedra, CathedraAssign, St
 
 #UPLOAD_FOLDER = '/files'
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 app.url_map.strict_slashes = False
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_CONNECTION_STRING')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -81,6 +84,93 @@ def get_all_careers():
         careers.append(career.name)
 
     return jsonify(careers), 200
+
+@app.route("/careers/info", methods=["GET"])
+def get_careers_info():
+    '''
+        Get the info of all the careers
+    '''
+    careers_info = []
+    for career in Career:
+        career_info = {}
+        # career_info = {
+        #     "cathedras": [],
+        #     "professors": [],
+        #     "students": []
+        # }
+        # query all the information for the cathedra
+        cathedras_in_career = Cathedra.query.filter_by(career=career.name).all()
+        professors_in_career = Professor.query.filter_by(career=career.name).all()
+        students_in_career = Student.query.filter_by(career=career.name).all()
+        # assign it to the dictionary
+        career_info["name"] = career.name
+        career_info["cathedras"] = [cathedra.serialize() for cathedra in cathedras_in_career]
+        career_info["professors"] = [professor.serialize() for professor in professors_in_career]
+        career_info["students"] = [student.serialize() for student in students_in_career]
+        careers_info.append(career_info)
+    
+    return jsonify(careers_info), 200
+
+@app.route("/get-careers-file", methods=["POST"])
+def get_careers_info_file():
+    '''
+        Get all careers info
+    '''
+    careers_info = []
+    for career in Career:
+        career_info = {}
+        # career_info = {
+        #     "cathedras": [],
+        #     "professors": [],
+        #     "students": []
+        # }
+        # query all the information for the cathedra
+        cathedras_in_career = Cathedra.query.filter_by(career=career.name).all()
+        professors_in_career = Professor.query.filter_by(career=career.name).all()
+        students_in_career = Student.query.filter_by(career=career.name).all()
+        # assign it to the dictionary
+        career_info["name"] = career.name
+        career_info["cathedras"] = cathedras_in_career
+        career_info["professors"] = professors_in_career
+        career_info["students"] = students_in_career
+        careers_info.append(career_info)
+
+    file_name = "InfoCarreras"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = file_name
+    
+    for title, info in {"A1": "Carrera", "B1": "Cantidad de materias","C1": "Cantidad de profesores", "D1": "Cantidad de estudiantes"}.items():
+        ws[title] = info
+    
+    i = 2 
+    for career_info in careers_info:
+        aux = ['A'+str(i), 'B'+str(i), 'C'+str(i), 'D'+str(i)]
+        ws[aux[0]] = career_info["name"]
+        ws[aux[1]] = len(career_info["cathedras"])
+        ws[aux[2]] = len(career_info["professors"])
+        ws[aux[3]] = len(career_info["students"])
+        i += 1
+
+    wb.save(file_name+'.xlsx')
+    shutil.move(file_name+'.xlsx', "src/static/reports/")
+
+    return jsonify({"msg": "Archivo generado", "file_name": file_name}), 200
+
+@app.route("/static-file/<file_name>", methods=["GET"])
+def create_static_image(file_name):
+
+    secured_filename = secure_filename(file_name+'.xlsx')
+    image_path = os.path.join("reports", secured_filename)
+    print(secured_filename, image_path)
+    print(app.static_folder)
+    print(os.path.join(app.static_folder, image_path))
+    print(os.path.exists(os.path.join(app.static_folder, image_path)))
+    
+    if os.path.exists(os.path.join(app.static_folder, image_path)):
+        return send_from_directory(app.static_folder, image_path)
+    else:
+        return jsonify({"msg": "Error archivo no encontrado"}), 404
 
 # endpoints for cathedra
 @app.route("/cathedra", methods=["GET"])
@@ -157,43 +247,6 @@ def upload_cathedras_file():
     return jsonify({"msg": "Se anadireron las catedras del archivo"}), 200
 
 # endpoints for professor
-# @app.route("/professor", methods=["POST"])
-# def create_professor():
-#     '''
-#         Creates a new professor
-#     '''
-#     # creates the professor 
-#     data = json.loads(request.data)
-#     new_professor = Professor(
-#         full_name=data["fullName"],
-#         ci=data["ci"],
-#         phone_number=data["phoneNumber"],
-#         age=data["age"],
-#         nationality=data["nationality"],
-#         residence=data["residence"],
-#         career=data["career"]
-#     )
-#     db.session.add(new_professor)
-#     try:
-#         db.session.commit()
-#     except:
-#         db.session.rollback()
-#         return jsonify({"msg": "Hubo un error creando al profesor"}), 500
-
-#     # creates the relations with the cathedras
-#     for cathedra_code in data["cathedras"]:
-#         cathedra = Cathedra.query.filter_by(code=cathedra_code)
-#         new_relation = CathedraAssign(professor_id=new_professor.id, cathedra_id=cathedra[0].id)
-#         db.session.add(new_relation)
-
-#     try:
-#         db.session.commit()
-#     except:
-#         db.session.rollback()
-#         return jsonify({"msg": "Hubo un error creando las relaciones"}), 500
-
-#     return jsonify(new_professor.serialize()), 200
-
 @app.route("/professor", methods=["POST"])
 def create_professor():
     '''
