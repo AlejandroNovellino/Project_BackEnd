@@ -83,6 +83,29 @@ def get_users_info():
 
     return jsonify([user.serialize() for user in users]), 200
 
+@app.route("/users/<email>", methods=["PUT"])
+def modify_user_role(email):
+    '''
+        Modify a user role searched by email
+    '''
+    # get the role from the request
+    role = request.json["role"]
+    # try to search the user by email
+    try: 
+        user = User.query.filter_by(email=email).all()[0]
+    except:
+        return jsonify({"msg": "Usuario no existe"}), 404
+
+    # make the change
+    user.role = Role(role).name
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
+        return jsonify({"msg": "Hubo un error modificando al usuario"}), 500
+
+    return jsonify(user.serialize()), 200
+
 # endpoint for getting the possibles career
 @app.route("/careers", methods=["GET"])
 def get_all_careers():
