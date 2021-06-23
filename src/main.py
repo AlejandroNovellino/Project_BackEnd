@@ -157,18 +157,19 @@ def get_careers_info_file():
 
     return jsonify({"msg": "Archivo generado", "file_name": file_name}), 200
 
-@app.route("/static-file/<file_name>", methods=["GET"])
-def create_static_image(file_name):
+@app.route("/static-file/<nature>/<file_name>", methods=["GET"])
+def create_static_image(nature, file_name):
 
     secured_filename = secure_filename(file_name+'.xlsx')
-    image_path = os.path.join("reports", secured_filename)
-    print(secured_filename, image_path)
-    print(app.static_folder)
-    print(os.path.join(app.static_folder, image_path))
-    print(os.path.exists(os.path.join(app.static_folder, image_path)))
+    image_path = os.path.join(app.static_folder, nature)
+
+    # print(secured_filename, image_path)
+    # print(app.static_folder)
+    # print(os.path.join(app.static_folder, image_path))
+    # print(os.path.exists(os.path.join(app.static_folder, image_path)))
     
-    if os.path.exists(os.path.join(app.static_folder, image_path)):
-        return send_from_directory(app.static_folder, image_path)
+    if os.path.exists(os.path.join(image_path, secured_filename)):
+        return send_from_directory(image_path, secured_filename)
     else:
         return jsonify({"msg": "Error archivo no encontrado"}), 404
 
