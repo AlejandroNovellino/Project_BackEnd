@@ -144,10 +144,10 @@ def get_careers_info():
     
     return jsonify(careers_info), 200
 
-@app.route("/get-careers-file", methods=["POST"])
-def get_careers_info_file():
+@app.route("/create/careers/file", methods=["POST"])
+def create_careers_info_file():
     '''
-        Get all careers info
+        Create a file of careers info
     '''
     careers_info = []
     for career in Career:
@@ -188,18 +188,7 @@ def get_careers_info_file():
     image_path = os.path.join(app.static_folder, "reports")
     wb.save(os.path.join(app.static_folder, image_path)+"/"+file_name+".xlsx")
 
-    return jsonify({"msg": "Archivo generado", "file_name": file_name}), 200
-
-@app.route("/static-file/<nature>/<file_name>", methods=["GET"])
-def create_static_image(nature, file_name):
-
-    secured_filename = secure_filename(file_name+'.xlsx')
-    image_path = os.path.join(app.static_folder, nature)
-    
-    if os.path.exists(os.path.join(image_path, secured_filename)):
-        return send_from_directory(image_path, secured_filename)
-    else:
-        return jsonify({"msg": "Error archivo no encontrado"}), 404
+    return jsonify({"msg": "Archivo generado", "fileName": file_name}), 200
 
 # endpoints for cathedra
 @app.route("/cathedra", methods=["GET"])
@@ -274,6 +263,38 @@ def upload_cathedras_file():
         return jsonify({"msg": "Hubo un problema creando la catedra"}), 500
 
     return jsonify({"msg": "Se anadireron las catedras del archivo"}), 200
+
+@app.route("/create/cathedras/file", methods=["POST"])
+def create_cathedras_info_file():
+    '''
+        Create a file of cathedras info
+    '''
+    cathedras_info = Cathedra.query.all()
+
+    file_name = "InfoMaterias"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = file_name
+    
+    for title, info in {"A1": "Materias", "B1": "Codigo","C1": "Creditos", "D1": "Carrera", "E1": "Coordinador", "F1": "Cantidad de Cursos", "G1": "Cantidad de Profesores"}.items():
+        ws[title] = info
+    
+    i = 2 
+    for cathedra_info in cathedras_info:
+        aux = ['A'+str(i), 'B'+str(i), 'C'+str(i), 'D'+str(i), 'E'+str(i), 'F'+str(i), 'G'+str(i), ]
+        ws[aux[0]] = cathedra_info.name
+        ws[aux[1]] = int(cathedra_info.code)
+        ws[aux[2]] = cathedra_info.credits
+        ws[aux[3]] = cathedra_info.career.name
+        ws[aux[4]] = cathedra_info.coordinator
+        ws[aux[5]] = len(cathedra_info.courses)
+        ws[aux[6]] = len(cathedra_info.professors)
+        i += 1
+
+    image_path = os.path.join(app.static_folder, "reports")
+    wb.save(os.path.join(app.static_folder, image_path)+"/"+file_name+".xlsx")
+
+    return jsonify({"msg": "Archivo generado", "fileName": file_name}), 200
 
 # endpoints for professor
 @app.route("/professor", methods=["POST"])
@@ -412,6 +433,40 @@ def upload_professors_file():
 
     return jsonify({"msg": "Se anadireron los profesores del archivo"}), 200
 
+@app.route("/create/professors/file", methods=["POST"])
+def create_professors_info_file():
+    '''
+        Create a file of professors info
+    '''
+    professors_info = Professor.query.all()
+
+    file_name = "InfoProfesores"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = file_name
+    
+    for title, info in {"A1": "Nombre", "B1": "Cedula","C1": "Telefono", "D1": "Edad", "E1": "Nacionalidad", "F1": "Residencia", "G1": "Carrera", "H1": "Cantidad de cursos pertenecientes", "I1": "Cantidad de materias pertenecientes"}.items():
+        ws[title] = info
+    
+    i = 2 
+    for professor_info in professors_info:
+        aux = ['A'+str(i), 'B'+str(i), 'C'+str(i), 'D'+str(i), 'E'+str(i), 'F'+str(i), 'G'+str(i), 'H'+str(i), 'I'+str(i),]
+        ws[aux[0]] = professor_info.full_name
+        ws[aux[1]] = int(professor_info.ci)
+        ws[aux[2]] = int(professor_info.phone_number)
+        ws[aux[3]] = professor_info.age
+        ws[aux[4]] = professor_info.nationality
+        ws[aux[5]] = professor_info.residence
+        ws[aux[6]] = professor_info.career.name
+        ws[aux[7]] = len(professor_info.courses)
+        ws[aux[8]] = len(professor_info.cathedras)
+        i += 1
+
+    image_path = os.path.join(app.static_folder, "reports")
+    wb.save(os.path.join(app.static_folder, image_path)+"/"+file_name+".xlsx")
+
+    return jsonify({"msg": "Archivo generado", "fileName": file_name}), 200
+
 # endpoints for student
 @app.route("/student", methods=["POST"])
 def create_student():
@@ -497,6 +552,39 @@ def upload_students_file():
                     return jsonify({"msg": "Hubo un problema creando la inscripcion"}), 500
 
     return jsonify({"msg": "Se anadireron los estudiantes del archivo"}), 200
+
+@app.route("/create/students/file", methods=["POST"])
+def create_students_info_file():
+    '''
+        Create a file of students info
+    '''
+    students_info = Student.query.all()
+
+    file_name = "InfoEstudiantes"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = file_name
+    
+    for title, info in {"A1": "Nombre", "B1": "Cedula","C1": "Telefono", "D1": "Edad", "E1": "Nacionalidad", "F1": "Residencia", "G1": "Carrera", "H1": "Cantidad de inscripciones"}.items():
+        ws[title] = info
+    
+    i = 2 
+    for student_info in students_info:
+        aux = ['A'+str(i), 'B'+str(i), 'C'+str(i), 'D'+str(i), 'E'+str(i), 'F'+str(i), 'G'+str(i), 'H'+str(i), 'I'+str(i),]
+        ws[aux[0]] = student_info.full_name
+        ws[aux[1]] = int(student_info.ci)
+        ws[aux[2]] = int(student_info.phone_number)
+        ws[aux[3]] = student_info.age
+        ws[aux[4]] = student_info.nationality
+        ws[aux[5]] = student_info.residence
+        ws[aux[6]] = student_info.career.name
+        ws[aux[7]] = len(student_info.inscriptions)
+        i += 1
+
+    image_path = os.path.join(app.static_folder, "reports")
+    wb.save(os.path.join(app.static_folder, image_path)+"/"+file_name+".xlsx")
+
+    return jsonify({"msg": "Archivo generado", "fileName": file_name}), 200
 
 # endpoints for inscriptions
 @app.route("/inscription", methods=["POST"])
@@ -654,6 +742,18 @@ def upload_grades_file():
                 return jsonify({"msg": "Hubo un rpblema creando la nota"}), 500
     
     return jsonify({"msg": "Se anadireron los notas del archivo"}), 200
+
+# endpoint for getting a file
+@app.route("/static-file/<nature>/<file_name>", methods=["GET"])
+def create_static_image(nature, file_name):
+
+    secured_filename = secure_filename(file_name+'.xlsx')
+    image_path = os.path.join(app.static_folder, nature)
+    
+    if os.path.exists(os.path.join(image_path, secured_filename)):
+        return send_from_directory(image_path, secured_filename)
+    else:
+        return jsonify({"msg": "Error archivo no encontrado"}), 404
 
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 4000))
