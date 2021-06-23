@@ -2,7 +2,6 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-import shutil
 from openpyxl import load_workbook
 from openpyxl import Workbook
 import datetime
@@ -15,7 +14,7 @@ from flask_cors import CORS
 from flask_jwt_extended import create_access_token, JWTManager
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, CommonData, Professor, Cathedra, CathedraAssign, Student, Course, Inscription, Grade, Evaluation, Career
+from models import db, User, CommonData, Professor, Cathedra, CathedraAssign, Student, Course, Inscription, Grade, Evaluation, Role, Career
 
 #UPLOAD_FOLDER = '/files'
 
@@ -42,6 +41,8 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
+
+# endpoints for user
 @app.route("/sign-up", methods=["POST"])
 def sign_up():
     data = request.json
@@ -72,6 +73,15 @@ def log_in():
         "user": user.serialize(),
         "token": token
     }), 200
+
+@app.route("/users/info", methods=["GET"])
+def get_users_info():
+    '''
+        Get all users info
+    '''
+    users = User.query.all()
+
+    return jsonify([user.serialize() for user in users]), 200
 
 # endpoint for getting the possibles career
 @app.route("/careers", methods=["GET"])
@@ -152,8 +162,8 @@ def get_careers_info_file():
         ws[aux[3]] = len(career_info["students"])
         i += 1
 
-    wb.save(file_name+'.xlsx')
-    shutil.move(file_name+'.xlsx', "src/static/reports/")
+    image_path = os.path.join(app.static_folder, "reports")
+    wb.save(os.path.join(app.static_folder, image_path)+"/"+file_name+".xlsx")
 
     return jsonify({"msg": "Archivo generado", "file_name": file_name}), 200
 
@@ -162,11 +172,6 @@ def create_static_image(nature, file_name):
 
     secured_filename = secure_filename(file_name+'.xlsx')
     image_path = os.path.join(app.static_folder, nature)
-
-    # print(secured_filename, image_path)
-    # print(app.static_folder)
-    # print(os.path.join(app.static_folder, image_path))
-    # print(os.path.exists(os.path.join(app.static_folder, image_path)))
     
     if os.path.exists(os.path.join(image_path, secured_filename)):
         return send_from_directory(image_path, secured_filename)
