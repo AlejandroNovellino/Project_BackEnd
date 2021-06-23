@@ -654,13 +654,6 @@ def upload_grades_file():
                 return jsonify({"msg": "Hubo un rpblema creando la nota"}), 500
     
     return jsonify({"msg": "Se anadireron los notas del archivo"}), 200
-# @app.route("/assignCoordinator/", methods=["POST"])
-# def assing_professor(professor):
-#     '''
-#         Get info about professor 
-#     '''
-
-#     return 200
 
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 4000))
