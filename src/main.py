@@ -739,7 +739,7 @@ def upload_grades_file():
                 db.session.commit()
             except:
                 db.session.rollback()
-                return jsonify({"msg": "Hubo un rpblema creando la nota"}), 500
+                return jsonify({"msg": "Hubo un problema creando la nota"}), 500
     
     return jsonify({"msg": "Se anadireron los notas del archivo"}), 200
 
