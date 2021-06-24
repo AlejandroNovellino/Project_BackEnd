@@ -22,7 +22,7 @@ flask-jwt-extended = "*"
 openpyxl = "*"
 
 [requires]
-python_version = "3.8.2"
+python_version = "3.8"
 
 [scripts]
 start="flask run -p 4000 -h 0.0.0.0"
