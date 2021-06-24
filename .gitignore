@@ -8,5 +8,6 @@ diagram.png
 public/*
 dist/*
 package.json
+static/*
 
 __pycache__/

@@ -286,7 +286,10 @@ def create_cathedras_info_file():
         ws[aux[1]] = int(cathedra_info.code)
         ws[aux[2]] = cathedra_info.credits
         ws[aux[3]] = cathedra_info.career.name
-        ws[aux[4]] = cathedra_info.coordinator
+        if cathedra_info.coordinator:
+            ws[aux[4]] = cathedra_info.coordinator.full_name
+        else:
+            ws[aux[4]] = "None"
         ws[aux[5]] = len(cathedra_info.courses)
         ws[aux[6]] = len(cathedra_info.professors)
         i += 1
