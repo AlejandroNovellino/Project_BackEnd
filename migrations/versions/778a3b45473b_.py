@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: b3401d8019ae
+Revision ID: 778a3b45473b
 Revises: 
-Create Date: 2021-06-19 16:37:33.254592
+Create Date: 2021-06-24 22:15:46.409896
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'b3401d8019ae'
+revision = '778a3b45473b'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -74,6 +74,7 @@ def upgrade():
     op.create_table('course',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('title', sa.String(length=40), nullable=True),
+    sa.Column('code', sa.String(length=8), nullable=True),
     sa.Column('init_date', sa.DateTime(), nullable=True),
     sa.Column('finish_date', sa.DateTime(), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=False),
@@ -81,7 +82,8 @@ def upgrade():
     sa.Column('professor_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['cathedra_id'], ['cathedra.id'], ),
     sa.ForeignKeyConstraint(['professor_id'], ['professor.id'], ),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('code')
     )
     op.create_table('evaluation',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -102,12 +104,10 @@ def upgrade():
     op.create_table('grade',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('value', sa.Integer(), nullable=False),
-    sa.Column('student_id', sa.Integer(), nullable=True),
     sa.Column('evaluation_id', sa.Integer(), nullable=True),
     sa.Column('inscription_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['evaluation_id'], ['evaluation.id'], ),
     sa.ForeignKeyConstraint(['inscription_id'], ['inscription.id'], ),
-    sa.ForeignKeyConstraint(['student_id'], ['student.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
